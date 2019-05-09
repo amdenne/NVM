@@ -1,10 +1,9 @@
 #include <Arduboy2.h>
-#include "bitmaps.h"
-
-#define FRAME_RATE 28
-#define FRAMES_IN_TITLE 28
-
-#define ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
+#define FRAME_RATE 30
+#define NO_SCENE 0
+#define GAME_TITLE 1
+#define GAME_PLAY 2
+#define GAME_OVER 3
 
 Arduboy2 arduboy;
 
@@ -12,46 +11,119 @@ Arduboy2 arduboy;
 #include <ArdBitmap.h>
 ArdBitmap<WIDTH, HEIGHT> ardbitmap;
 
-uint16_t frames = ARRAY_LEN(OUT);
 unsigned long counter = 0;
+int lastScene = NO_SCENE;
+int selectedOption = 1;
+int currentScene;
+
 
 void setup() {
   arduboy.begin();
   arduboy.setFrameRate(FRAME_RATE);
+  playNevermindSplash();
+  currentScene = GAME_TITLE;
 }
 
 void loop() {
   if (!(arduboy.nextFrame()))
     return;
 
-  drawTitle();
-  counter++;
+  setScene();
 
-  if (arduboy.pressed(A_BUTTON) || arduboy.pressed(B_BUTTON))
-    counter = 0;
+  counter++;
 }
 
-void drawTitle() {
-  if (counter < FRAMES_IN_TITLE) {
-    arduboy.clear();
-    ardbitmap.drawCompressed(WIDTH / 2, HEIGHT / 2, OUT[counter % frames], WHITE, ALIGN_CENTER, MIRROR_NONE);
-    arduboy.display();
+void setScene() {
+  lastScene = currentScene;
+  if (currentScene == GAME_TITLE) {
+    menuSelectionStuff();
+    createMenu();
+  }
+}
+
+void menuSelectionStuff() {
+  arduboy.pollButtons();
+
+  if (arduboy.pressed(DOWN_BUTTON)) {
+    selectedOption++;
+    if (selectedOption > 3)
+      selectedOption = 1;
+  }
+  else if (arduboy.pressed(UP_BUTTON)) {
+    selectedOption--;
+    if (selectedOption < 1)
+      selectedOption = 3;
   }
 
-  if (counter >= FRAMES_IN_TITLE and counter % 2 == 0) {
-    arduboy.setCursor(45, 52);
-    arduboy.print("            ");
-    arduboy.display();
-    if (isButtonPushedWhileDelay(50))
-      counter = 0; //TODO: change menu or something
-  }
+  highlightItem(selectedOption);
+  arduboy.delayShort(50);
+}
 
-  if (counter >= FRAMES_IN_TITLE and counter % 2 != 0) {
-    arduboy.setCursor(45, 52);
-    arduboy.print("Press A or B");
-    arduboy.display();
-    if (isButtonPushedWhileDelay(50))
-      counter = 0; //TODO: change menu or something
+
+void highlightItem(int selectedOption) {
+  if (selectedOption == 1)
+    highlightFirstItem();
+  else if (selectedOption == 2)
+    highlightSecondItem();
+  else if (selectedOption == 3)
+    highlightThirdItem();
+}
+
+void highlightThirdItem() {
+  arduboy.drawRect(2, 43, 40, 11, WHITE);
+  arduboy.display();
+}
+
+void highlightSecondItem() {
+  arduboy.drawRect(2, 28, 40, 11, WHITE);
+  arduboy.display();
+}
+
+void highlightFirstItem() {
+  arduboy.drawRect(2, 13, 28, 11, WHITE);
+  arduboy.display();
+}
+
+void playNevermindSplash() {
+  animateNevermindDown();
+  animateGamesRight();
+  arduboy.delayShort(500);
+  arduboy.clear();
+}
+
+void createMenu() {
+  arduboy.clear();
+  arduboy.setCursor(4, 15);
+  arduboy.println("Test");
+  arduboy.setCursor(4, 30);
+  arduboy.println("Test 2");
+  arduboy.setCursor(4, 45);
+  arduboy.println("Test 3");
+  arduboy.display();
+}
+
+void animateNevermindDown() {
+  int y = -16;
+  while (y < 10) {
+    if (arduboy.nextFrame()) {
+      arduboy.clear();
+      arduboy.drawBitmap(0, y, NEVERMIND, 128, 16, WHITE);
+      arduboy.display();
+      y += 2;
+    }
+  }
+}
+
+void animateGamesRight() {
+  int x = -80;
+  while (x < 45) {
+    if (arduboy.nextFrame()) {
+      arduboy.clear();
+      arduboy.drawBitmap(0, 10, NEVERMIND, 128, 16, WHITE);
+      arduboy.drawBitmap(x, 29, GAMES, 80, 17, WHITE);
+      arduboy.display();
+      x += 10;
+    }
   }
 }
 
