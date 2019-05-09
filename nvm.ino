@@ -1,9 +1,10 @@
-#include <Arduboy2.h>
 #define FRAME_RATE 30
 #define NO_SCENE 0
 #define GAME_TITLE 1
 #define GAME_PLAY 2
 #define GAME_OVER 3
+
+#include <Arduboy2.h>
 
 Arduboy2 arduboy;
 
@@ -12,9 +13,10 @@ Arduboy2 arduboy;
 ArdBitmap<WIDTH, HEIGHT> ardbitmap;
 
 unsigned long counter = 0;
-int lastScene = NO_SCENE;
-int selectedOption = 1;
-int currentScene;
+byte lastScene = NO_SCENE;
+byte selectedOption = 1;
+byte currentScene;
+
 
 
 void setup() {
@@ -39,6 +41,19 @@ void setScene() {
     menuSelectionStuff();
     createMenu();
   }
+  else if (currentScene == GAME_PLAY){
+    while (currentScene == GAME_PLAY){
+      playGame();
+    }
+}
+}
+
+void playGame(){
+  arduboy.clear();  
+  arduboy.setCursor(4, HEIGHT/2);
+  arduboy.println("this is the");
+  arduboy.println("game scene");
+  arduboy.display();  
 }
 
 void menuSelectionStuff() {
@@ -54,18 +69,21 @@ void menuSelectionStuff() {
     if (selectedOption < 1)
       selectedOption = 3;
   }
-
-  highlightItem(selectedOption);
-  arduboy.delayShort(50);
+    else if(arduboy.justPressed(A_BUTTON)) {
+    lastScene = currentScene;
+    currentScene = selectedOption;
+    setScene();
+  }
+  
+  arduboy.delayShort(30);
 }
 
-
-void highlightItem(int selectedOption) {
-  if (selectedOption == 1)
+void highlightItem(byte selectedOption) {
+  if (selectedOption == GAME_TITLE)
     highlightFirstItem();
-  else if (selectedOption == 2)
+  else if (selectedOption == GAME_PLAY)
     highlightSecondItem();
-  else if (selectedOption == 3)
+  else if (selectedOption == GAME_OVER)
     highlightThirdItem();
 }
 
@@ -85,8 +103,8 @@ void highlightFirstItem() {
 }
 
 void playNevermindSplash() {
-  animateNevermindDown();
-  animateGamesRight();
+  animateNevermindDown(-16, 10, 2);
+  animateGamesRight(-80, 45, 10);
   arduboy.delayShort(500);
   arduboy.clear();
 }
@@ -99,36 +117,35 @@ void createMenu() {
   arduboy.println("Test 2");
   arduboy.setCursor(4, 45);
   arduboy.println("Test 3");
+  highlightItem(selectedOption);
   arduboy.display();
 }
 
-void animateNevermindDown() {
-  int y = -16;
-  while (y < 10) {
+void animateNevermindDown(int16_t startingPosY, int16_t endingPosY, int16_t speed) {
+  while (startingPosY < endingPosY) {
     if (arduboy.nextFrame()) {
       arduboy.clear();
-      arduboy.drawBitmap(0, y, NEVERMIND, 128, 16, WHITE);
+      arduboy.drawBitmap(0, startingPosY, NEVERMIND, 128, 16, WHITE);
       arduboy.display();
-      y += 2;
+      startingPosY += speed;
     }
   }
 }
 
-void animateGamesRight() {
-  int x = -80;
-  while (x < 45) {
+void animateGamesRight(int16_t startingPosX, int16_t endingPosX, int16_t speed) {
+  while (startingPosX < endingPosX) {
     if (arduboy.nextFrame()) {
       arduboy.clear();
       arduboy.drawBitmap(0, 10, NEVERMIND, 128, 16, WHITE);
-      arduboy.drawBitmap(x, 29, GAMES, 80, 17, WHITE);
+      arduboy.drawBitmap(startingPosX, 29, GAMES, 80, 17, WHITE);
       arduboy.display();
-      x += 10;
+      startingPosX += 10;
     }
   }
 }
 
 boolean isButtonPushedWhileDelay(int delayTime) {
-  for (int i = 0; i < delayTime; i++)
+  for (byte i = 0; i < delayTime; i++)
   {
     arduboy.delayShort(10);
     if (arduboy.pressed(A_BUTTON) || arduboy.pressed(B_BUTTON)) {
