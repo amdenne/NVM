@@ -44,12 +44,12 @@ void setScene() {
 void menuSelectionStuff() {
   arduboy.pollButtons();
 
-  if (arduboy.pressed(DOWN_BUTTON)) {
+  if (arduboy.justPressed(DOWN_BUTTON)) {
     selectedOption++;
     if (selectedOption > 3)
       selectedOption = 1;
   }
-  else if (arduboy.pressed(UP_BUTTON)) {
+  else if (arduboy.justPressed(UP_BUTTON)) {
     selectedOption--;
     if (selectedOption < 1)
       selectedOption = 3;
