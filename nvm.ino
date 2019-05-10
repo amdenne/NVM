@@ -51,8 +51,44 @@ void setScene() {
       }
     }
   }
+  else if (currentScene == GAME_OVER) {
+    while (currentScene == GAME_OVER) {
+      drawGameOverScene();
+      if (arduboy.pressed(B_BUTTON)) {
+        lastScene = GAME_PLAY;
+        currentScene = GAME_TITLE;
+      }
+    }
+  }
 }
-
+void drawGameOverScene(){
+  arduboy.clear();  
+  arduboy.setCursor(4, HEIGHT/2);
+  char gameOverText[15] = "Wow, you suck.";
+  for(byte i = 0; strlen(gameOverText) >= i; i++) {    
+    arduboy.print(gameOverText[i]);
+    arduboy.display();
+    arduboy.delayShort(250);
+  }
+  arduboy.println();
+  arduboy.delayShort(1000);
+  arduboy.print(".");
+  arduboy.display();
+  arduboy.delayShort(1000);
+  arduboy.print(".");
+  arduboy.display();
+  arduboy.delayShort(1000);  
+  arduboy.print(".");
+  arduboy.display();
+  arduboy.delayShort(1000);
+  arduboy.clear();
+  arduboy.setTextSize(2);
+  arduboy.setCursor(4, 20);
+  arduboy.println("gitgudlul");
+  arduboy.display();  
+  arduboy.setTextSize(1);
+  arduboy.delayShort(3000);
+}
 void playGame(){
   arduboy.clear();  
   arduboy.setCursor(4, HEIGHT/2);
