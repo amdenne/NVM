@@ -7,6 +7,7 @@
 #include <Arduboy2.h>
 
 Arduboy2 arduboy;
+Sprites sprites;
 
 #define ARDBITMAP_SBUF arduboy.getBuffer()
 #include <ArdBitmap.h>
@@ -16,8 +17,6 @@ unsigned long counter = 0;
 byte lastScene = NO_SCENE;
 byte selectedOption = 1;
 byte currentScene;
-
-
 
 void setup() {
   arduboy.begin();
@@ -32,7 +31,8 @@ void loop() {
 
   setScene();
 
-  counter++;
+  if (arduboy.everyXFrames(15)) counter++;
+  if (counter > 1) counter = 0;
 }
 
 void setScene() {
@@ -41,11 +41,16 @@ void setScene() {
     menuSelectionStuff();
     createMenu();
   }
-  else if (currentScene == GAME_PLAY){
-    while (currentScene == GAME_PLAY){
+  else if (currentScene == GAME_PLAY) {
+    while (currentScene == GAME_PLAY) {
       playGame();
+      
+      if(arduboy.pressed(B_BUTTON)) {
+        lastScene = GAME_PLAY;
+        currentScene = GAME_TITLE;
+      }
     }
-}
+  }
 }
 
 void playGame(){
@@ -69,14 +74,14 @@ void menuSelectionStuff() {
     if (selectedOption < 1)
       selectedOption = 3;
   }
-    else if(arduboy.justPressed(A_BUTTON)) {
+  else if(arduboy.justPressed(A_BUTTON)) {
     lastScene = currentScene;
     currentScene = selectedOption;
-    setScene();
   }
-  
+
   arduboy.delayShort(30);
 }
+
 
 void highlightItem(byte selectedOption) {
   if (selectedOption == GAME_TITLE)
@@ -111,14 +116,22 @@ void playNevermindSplash() {
 
 void createMenu() {
   arduboy.clear();
+  sprites.drawPlusMask(64, -2, gate_plus_mask, counter);
+  drawMenu();
+  arduboy.display();
+}
+
+void drawMenu(){
   arduboy.setCursor(4, 15);
   arduboy.println("Test");
   arduboy.setCursor(4, 30);
   arduboy.println("Test 2");
   arduboy.setCursor(4, 45);
   arduboy.println("Test 3");
+  arduboy.setCursor(60, 56);
+  arduboy.print("selected: ");
+  arduboy.print(selectedOption);
   highlightItem(selectedOption);
-  arduboy.display();
 }
 
 void animateNevermindDown(int16_t startingPosY, int16_t endingPosY, int16_t speed) {
