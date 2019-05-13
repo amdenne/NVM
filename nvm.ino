@@ -3,6 +3,16 @@
 #define GAME_TITLE 1
 #define GAME_PLAY 2
 #define GAME_OVER 3
+#define CHAR_WIDTH 6
+#define CHAR_HEIGHT 8
+#define TILE_SIZE 16
+#define PLAYER_SPRITE_WIDTH 10
+#define PLAYER_SPRITE_HEIGHT 16
+#define WORLD_HEIGHT 4
+#define WORLD_WIDTH 8
+#define GRASS 0
+#define WATER 2
+
 
 #include <Arduboy2.h>
 
@@ -17,6 +27,22 @@ unsigned long counter = 0;
 byte lastScene = NO_SCENE;
 byte selectedOption = 1;
 byte currentScene;
+boolean gameOverAnimPlayedOnce = false;
+char option1[] = "Game Title";
+char option2[] = "Play Game";
+char option3[] = "Game Over";
+byte maxPlayerHealth = 8;
+byte currentPlayerHealth = 8;
+int playerX = (WIDTH / 2) - (PLAYER_SPRITE_WIDTH / 2);
+int playerY = (HEIGHT / 2) - (PLAYER_SPRITE_HEIGHT / 2);
+int mapX = 0;
+int mapY = 0;
+int world[WORLD_HEIGHT][WORLD_WIDTH] = { 
+	{ GRASS, GRASS, GRASS, GRASS, GRASS, GRASS, WATER, WATER },
+	{ GRASS, WATER, WATER, GRASS, GRASS, WATER, WATER, WATER },
+	{ GRASS, WATER, WATER, GRASS, GRASS, WATER, WATER, WATER },
+	{ GRASS, GRASS, GRASS, GRASS, GRASS, GRASS, WATER, WATER }
+};
 
 void setup() {
   arduboy.begin();
@@ -40,81 +66,193 @@ void setScene() {
   arduboy.clear();
   if (currentScene == GAME_TITLE) {
     menuSelectionStuff();
-    createMenu();
+    drawMenu();
   }
   else if(currentScene == NO_SCENE)
   {
-    for(byte x = 0; x < WIDTH; x++){
-      for(byte y = 0; y < HEIGHT; y++){
-        sprites.drawSelfMasked(x, y, GRASS_SPRITE, counter);
-      }
-    }
+    arduboy.clear();
     arduboy.display();
 
-    if (arduboy.pressed(B_BUTTON)) {
+    if (arduboy.pressed(A_BUTTON)) {
       lastScene = NO_SCENE;
       currentScene = GAME_TITLE;
     }
   }
   else if (currentScene == GAME_PLAY) {
-    while (currentScene == GAME_PLAY) {
-      playGame();
-      
-      if(arduboy.pressed(B_BUTTON)) {
-        lastScene = GAME_PLAY;
-        currentScene = GAME_TITLE;
-      }
-    }
+    if(currentPlayerHealth <= 0){
+      currentScene = GAME_OVER;
+      setScene();
+    }    
+      playGame();      
+    if(arduboy.pressed(A_BUTTON)) {
+      lastScene = GAME_PLAY;
+      currentScene = GAME_TITLE;
+    }    
   }
   else if (currentScene == GAME_OVER) {
     while (currentScene == GAME_OVER) {
-      drawGameOverScene(true);
-      if (arduboy.pressed(B_BUTTON)) {
+      if(!gameOverAnimPlayedOnce) drawGameOverScene();
+      if (arduboy.pressed(A_BUTTON)) {
+        gameOverAnimPlayedOnce = false;
         lastScene = GAME_OVER;
         currentScene = GAME_TITLE;
+        resetPlayer();
       }
     }
   }
 }
 
-void drawGameOverScene(bool animateGameOver){
-  while (animateGameOver)  {
+void resetPlayer() {
+  mapX = 0;
+  mapY = 0; 
+  setPlayerHealthToFull();
+}
+
+void playGame(){  
+  drawWorld();
+  drawSpider();
+  drawPlayer(); 
+
+  arduboy.display();  
+}
+
+void debug(){
+  arduboy.fillRect(0, 0, 130, 8, BLACK);
+	arduboy.setCursor(0, 0);
+  arduboy.print((playerY + PLAYER_SPRITE_WIDTH/2 - mapY) / TILE_SIZE );
+  arduboy.print(",");
+  arduboy.print((playerX + PLAYER_SPRITE_WIDTH/2 - mapX) / TILE_SIZE );
+  
+  arduboy.setCursor(0, 8);
+  arduboy.fillRect(0, 8, 60, 8, BLACK);
+  arduboy.print(mapY);
+  arduboy.print(",");
+  arduboy.print(mapX);
+  arduboy.print("MapY/X");
+
+  arduboy.setCursor(0, 16);
+  arduboy.fillRect(0, 16, 60, 8, BLACK);
+  arduboy.print(playerY);
+  arduboy.print(",");
+  arduboy.print(playerX);
+  arduboy.print("PlyrY/X");
+
+  arduboy.setCursor(35, 0);
+  arduboy.print("U:");
+  arduboy.print((playerY - PLAYER_SPRITE_HEIGHT - mapY) / TILE_SIZE);
+  arduboy.print(",");
+  arduboy.print("L:");
+  arduboy.print((playerX - PLAYER_SPRITE_WIDTH - mapX) / TILE_SIZE);
+
+  arduboy.setCursor(80, 0);
+  arduboy.print("D:");
+  arduboy.print((playerY + PLAYER_SPRITE_HEIGHT - mapY) / TILE_SIZE);
+  arduboy.print(",");
+  arduboy.print("R:");
+  arduboy.print((playerX + PLAYER_SPRITE_WIDTH - mapX) / TILE_SIZE);
+}
+
+void drawPlayer(){
+  int tileY = (playerY + PLAYER_SPRITE_HEIGHT/2 - mapY) / TILE_SIZE;
+  int tileX = (playerX + PLAYER_SPRITE_WIDTH/2 - mapX) / TILE_SIZE;
+
+  if (arduboy.pressed(DOWN_BUTTON)) {
+    sprites.drawPlusMask(playerX, playerY, CHAR_FORWARD_WALKING, counter);
+
+    tileY = (playerY + PLAYER_SPRITE_HEIGHT - mapY) / TILE_SIZE;
+    if (playerY + PLAYER_SPRITE_HEIGHT < mapY + TILE_SIZE * WORLD_HEIGHT && world[tileY][tileX] < WATER)
+      mapY--;
+  }
+
+  else if (arduboy.pressed(UP_BUTTON)){
+    sprites.drawPlusMask(playerX, playerY, CHAR_BACK_WALKING, counter);
+
+    tileY = (playerY - PLAYER_SPRITE_HEIGHT - mapY) / TILE_SIZE;
+    if (mapY < playerY + PLAYER_SPRITE_HEIGHT / 2 && world[tileY][tileX] < WATER)
+      mapY++;
+  }
+
+  else if (arduboy.pressed(LEFT_BUTTON))  {
+    sprites.drawPlusMask(playerX, playerY, CHAR_LEFT_WALKING, counter);
+
+    tileX = (playerX - PLAYER_SPRITE_WIDTH - mapX) / TILE_SIZE;
+    if (mapX < playerX && world[tileY][tileX] < WATER)
+      mapX++;
+  }
+
+  else if (arduboy.pressed(RIGHT_BUTTON))  {
+    sprites.drawPlusMask(playerX, playerY, CHAR_RIGHT_WALKING, counter);
+
+    tileX = (playerX + PLAYER_SPRITE_WIDTH - mapX) / TILE_SIZE;
+    if (playerX + PLAYER_SPRITE_WIDTH < mapX + TILE_SIZE * WORLD_WIDTH && world[tileY][tileX] < WATER)
+      mapX--;
+  }
+
+  else {
+    sprites.drawPlusMask(playerX, playerY, CHAR_FORWARD_IDLE, 0);
+  }  
+  
+  drawPlayerHealth();
+  debug();
+}
+
+void drawPlayerHealth(){
+  arduboy.fillRect(3, 3, (maxPlayerHealth * 2) + 2, 7, BLACK);
+  arduboy.fillRect(4, 4, (currentPlayerHealth * 2), 5, WHITE);
+}
+
+void drawSpider(){
+  int spiderX = mapX ;
+  int spiderY = 12;
+  sprites.drawPlusMask(64 + mapX, 12 + mapY, SPIDER, counter);
+}
+
+void drawWorld() {
+  const int tilesWide = WIDTH / TILE_SIZE + 1;
+  const int tilesHigh = HEIGHT / TILE_SIZE + 1;
+
+  for (int y = 0; y < tilesHigh; y++) {
+    for (int x = 0; x < tilesWide; x++) {
+        const int tileX = x - mapX / TILE_SIZE;
+        const int tileY = y - mapY / TILE_SIZE;
+        if(tileX >= 0 && tileY >= 0 && tileX < WORLD_WIDTH && tileY <  WORLD_HEIGHT)
+          arduboy.drawBitmap((x * TILE_SIZE + mapX % TILE_SIZE), (y * TILE_SIZE + mapY % TILE_SIZE), TILESET[world[tileY][tileX] + counter], TILE_SIZE, TILE_SIZE, WHITE);
+    }
+  }
+}
+
+void drawGameOverScene(){
+  gameOverAnimPlayedOnce = true;
     arduboy.clear();
     arduboy.setCursor(4, HEIGHT / 2);
     char gameOverText[15] = "Wow, you suck.";
     for (byte i = 0; strlen(gameOverText) >= i; i++) {
       arduboy.print(gameOverText[i]);
       arduboy.display();
-      arduboy.delayShort(250);
+      arduboy.delayShort(100);
     }
-    arduboy.delayShort(1000);
+    arduboy.delayShort(250);
     arduboy.clear();
     arduboy.setCursor(4, HEIGHT / 2);
     arduboy.print(".");
     arduboy.display();
-    arduboy.delayShort(1000);
+    arduboy.delayShort(250);
     arduboy.print(".");
     arduboy.display();
-    arduboy.delayShort(1000);
+    arduboy.delayShort(250);
     arduboy.print(".");
     arduboy.display();
-    arduboy.delayShort(1000);
+    arduboy.delayShort(250);
     arduboy.clear();
     arduboy.setTextSize(2);
     arduboy.setCursor(4, 20);
     arduboy.println("gitgudlul");
     arduboy.display();
     arduboy.setTextSize(1);
-    arduboy.delayShort(3000);
-    animateGameOver = false;
-  }
 }
-void playGame(){
-  arduboy.clear();  
-  arduboy.setCursor(4, HEIGHT/2);
-  arduboy.println("this is the");
-  arduboy.println("game scene");
-  arduboy.display();  
+
+void setPlayerHealthToFull() {
+  currentPlayerHealth = maxPlayerHealth;
 }
 
 void menuSelectionStuff() {
@@ -130,40 +268,30 @@ void menuSelectionStuff() {
     if (selectedOption < 1)
       selectedOption = 3;
   }
-  else if(arduboy.justPressed(A_BUTTON)) {
+  else if(arduboy.justPressed(B_BUTTON)) {
     lastScene = currentScene;
     currentScene = selectedOption;
   }
-  else if(arduboy.justPressed(LEFT_BUTTON)){
-    lastScene = currentScene;
-    currentScene = NO_SCENE;
-  }
+  // else if(arduboy.justPressed(LEFT_BUTTON)){
+  //   lastScene = currentScene;
+  //   currentScene = NO_SCENE;
+  // }
 
   arduboy.delayShort(30);
 }
 
-
 void highlightItem(byte selectedOption) {
   if (selectedOption == GAME_TITLE)
-    highlightFirstItem();
+    highlight(2, 13, option1);
   else if (selectedOption == GAME_PLAY)
-    highlightSecondItem();
+    highlight(2, 28, option2);
   else if (selectedOption == GAME_OVER)
-    highlightThirdItem();
+    highlight(2, 43, option3);
 }
 
-void highlightThirdItem() {
-  arduboy.drawRect(2, 43, 40, 11, WHITE);
-  arduboy.display();
-}
-
-void highlightSecondItem() {
-  arduboy.drawRect(2, 28, 40, 11, WHITE);
-  arduboy.display();
-}
-
-void highlightFirstItem() {
-  arduboy.drawRect(2, 13, 28, 11, WHITE);
+void highlight(byte x, byte y, char item[]) {
+  byte itemWidth = strlen(item) * CHAR_WIDTH + 3;
+  arduboy.drawRect(x, y, itemWidth, 11, WHITE);
   arduboy.display();
 }
 
@@ -174,20 +302,20 @@ void playNevermindSplash() {
   arduboy.clear();
 }
 
-void createMenu() {
+void drawMenu() {
   arduboy.clear();
-  sprites.drawPlusMask(64, -2, gate_plus_mask, counter);
-  drawMenu();
+  sprites.drawPlusMask(66, -2, gate_plus_mask, counter);
+  drawMenuText();
   arduboy.display();
 }
 
-void drawMenu(){
+void drawMenuText(){
   arduboy.setCursor(4, 15);
-  arduboy.println("Test");
+  arduboy.println(option1);
   arduboy.setCursor(4, 30);
-  arduboy.println("Test 2");
+  arduboy.println(option2);
   arduboy.setCursor(4, 45);
-  arduboy.println("Test 3");
+  arduboy.println(option3);
   arduboy.setCursor(60, 56);
   arduboy.print("selected: ");
   arduboy.print(selectedOption);
@@ -215,15 +343,4 @@ void animateGamesRight(int16_t startingPosX, int16_t endingPosX, int16_t speed) 
       startingPosX += 10;
     }
   }
-}
-
-boolean isButtonPushedWhileDelay(int delayTime) {
-  for (byte i = 0; i < delayTime; i++)
-  {
-    arduboy.delayShort(10);
-    if (arduboy.pressed(A_BUTTON) || arduboy.pressed(B_BUTTON)) {
-      return true;
-    }
-  }
-  return false;
 }
