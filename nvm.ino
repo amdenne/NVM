@@ -39,7 +39,7 @@ int mapX = 0;
 int mapY = 0;
 int world[WORLD_HEIGHT][WORLD_WIDTH] = { 
 	{ GRASS, GRASS, GRASS, GRASS, GRASS, GRASS, WATER, WATER },
-	{ GRASS, WATER, WATER, GRASS, GRASS, WATER, WATER, WATER },
+	{ GRASS, WATER, GRASS, GRASS, GRASS, WATER, WATER, WATER },
 	{ GRASS, WATER, WATER, GRASS, GRASS, WATER, WATER, WATER },
 	{ GRASS, GRASS, GRASS, GRASS, GRASS, GRASS, WATER, WATER }
 };
@@ -91,7 +91,8 @@ void setScene() {
   }
   else if (currentScene == GAME_OVER) {
     while (currentScene == GAME_OVER) {
-      if(!gameOverAnimPlayedOnce) drawGameOverScene();
+      if (!gameOverAnimPlayedOnce)
+        drawGameOverScene();
       if (arduboy.pressed(A_BUTTON)) {
         gameOverAnimPlayedOnce = false;
         lastScene = GAME_OVER;
@@ -119,7 +120,7 @@ void playGame(){
 void debug(){
   arduboy.fillRect(0, 0, 130, 8, BLACK);
 	arduboy.setCursor(0, 0);
-  arduboy.print((playerY + PLAYER_SPRITE_WIDTH/2 - mapY) / TILE_SIZE );
+  arduboy.print((playerY + PLAYER_SPRITE_HEIGHT - mapY) / TILE_SIZE );
   arduboy.print(",");
   arduboy.print((playerX + PLAYER_SPRITE_WIDTH/2 - mapX) / TILE_SIZE );
   
@@ -139,10 +140,10 @@ void debug(){
 
   arduboy.setCursor(35, 0);
   arduboy.print("U:");
-  arduboy.print((playerY - PLAYER_SPRITE_HEIGHT - mapY) / TILE_SIZE);
+  arduboy.print((playerY + PLAYER_SPRITE_HEIGHT / 2 - mapY) / TILE_SIZE);
   arduboy.print(",");
   arduboy.print("L:");
-  arduboy.print((playerX - PLAYER_SPRITE_WIDTH - mapX) / TILE_SIZE);
+  arduboy.print((playerX - mapX) / TILE_SIZE);
 
   arduboy.setCursor(80, 0);
   arduboy.print("D:");
@@ -153,21 +154,21 @@ void debug(){
 }
 
 void drawPlayer(){
-  int tileY = (playerY + PLAYER_SPRITE_HEIGHT/2 - mapY) / TILE_SIZE;
-  int tileX = (playerX + PLAYER_SPRITE_WIDTH/2 - mapX) / TILE_SIZE;
+  int tileY = (playerY + PLAYER_SPRITE_HEIGHT + 2 - mapY) / TILE_SIZE;
+  int tileX = (playerX + PLAYER_SPRITE_WIDTH / 2 - mapX) / TILE_SIZE;
 
   if (arduboy.pressed(DOWN_BUTTON)) {
     sprites.drawPlusMask(playerX, playerY, CHAR_FORWARD_WALKING, counter);
 
-    tileY = (playerY + PLAYER_SPRITE_HEIGHT - mapY) / TILE_SIZE;
-    if (playerY + PLAYER_SPRITE_HEIGHT < mapY + TILE_SIZE * WORLD_HEIGHT && world[tileY][tileX] < WATER)
+    tileY = (playerY + PLAYER_SPRITE_HEIGHT + 2 - mapY) / TILE_SIZE;
+    if ((playerY + PLAYER_SPRITE_HEIGHT) < (mapY + TILE_SIZE * WORLD_HEIGHT) && world[tileY][tileX] < WATER)
       mapY--;
   }
 
   else if (arduboy.pressed(UP_BUTTON)){
     sprites.drawPlusMask(playerX, playerY, CHAR_BACK_WALKING, counter);
 
-    tileY = (playerY - PLAYER_SPRITE_HEIGHT - mapY) / TILE_SIZE;
+    tileY = (playerY + PLAYER_SPRITE_HEIGHT / 2 - mapY) / TILE_SIZE;
     if (mapY < playerY + PLAYER_SPRITE_HEIGHT / 2 && world[tileY][tileX] < WATER)
       mapY++;
   }
@@ -175,7 +176,7 @@ void drawPlayer(){
   else if (arduboy.pressed(LEFT_BUTTON))  {
     sprites.drawPlusMask(playerX, playerY, CHAR_LEFT_WALKING, counter);
 
-    tileX = (playerX - PLAYER_SPRITE_WIDTH - mapX) / TILE_SIZE;
+    tileX = (playerX - mapX) / TILE_SIZE;
     if (mapX < playerX && world[tileY][tileX] < WATER)
       mapX++;
   }
