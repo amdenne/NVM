@@ -6,24 +6,18 @@
 #define CHAR_WIDTH 6
 #define CHAR_HEIGHT 8
 #define TILE_SIZE 16
-#define PLAYER_SPRITE_WIDTH 10
-#define PLAYER_SPRITE_HEIGHT 16
 #define WORLD_HEIGHT 4
 #define WORLD_WIDTH 8
 #define GRASS 0
 #define WATER 2
 #define MAX_PLAYER_PROJECTILES 10
 
+#include "Player.h"
+  Player player(1);
+#include "bitmaps.h"
 #include <Arduboy2.h>
-
-Arduboy2 arduboy;
-Sprites sprites;
-Rect playerCollider;
-Rect enemyCollider;
-
-#define ARDBITMAP_SBUF arduboy.getBuffer()
-#include <ArdBitmap.h>
-ArdBitmap<WIDTH, HEIGHT> ardbitmap;
+  Arduboy2 arduboy;
+  Sprites sprites;
 
 class Projectile{
   public :
@@ -35,19 +29,8 @@ class Projectile{
   byte speed;
 };
 
-class Player {
-  public:
-  Player(byte _level) {
-    level = _level;
-    maxHealth = _level * 10;
-    currentHealth = _level * 10;
-  }
-  byte level;
-  byte maxHealth;
-  byte currentHealth;
-};
-
-Player player(1);
+Rect playerCollider;
+Rect enemyCollider;
 unsigned long counter = 0;
 byte lastScene = NO_SCENE;
 byte selectedOption = 1;
@@ -56,10 +39,6 @@ boolean gameOverAnimPlayedOnce = false;
 char option1[] = "Game Title";
 char option2[] = "Play Game";
 char option3[] = "Game Over";
-byte maxPlayerHealth = 8;
-byte currentPlayerHealth = 8;
-int playerX = (WIDTH / 2) - (PLAYER_SPRITE_WIDTH / 2);
-int playerY = (HEIGHT / 2) - (PLAYER_SPRITE_HEIGHT / 2);
 int mapX = 0;
 int mapY = 0;
 int world[WORLD_HEIGHT][WORLD_WIDTH] = { 
@@ -74,14 +53,15 @@ void setup() {
   arduboy.setFrameRate(FRAME_RATE);
   playNevermindSplash();
   currentScene = GAME_TITLE;
-  Projectile playerProjectiles[MAX_PLAYER_PROJECTILES];
-  player = Player(1);
+  // Projectile playerProjectiles[MAX_PLAYER_PROJECTILES];
 }
 
 void debug(){
   arduboy.fillRect(0, 0, 60, 8, BLACK);
   arduboy.setCursor(0,0);
-  arduboy.print(player.currentHealth);
+  arduboy.print(player.spriteHeight());  
+  arduboy.print(",");
+  arduboy.print(player.spriteWidth());
 }
 
 void loop() {
@@ -112,7 +92,7 @@ void setScene() {
     }
   }
   else if (currentScene == GAME_PLAY) {
-    if(currentPlayerHealth <= 0){
+    if(player.currentHealth <= 0){
       currentScene = GAME_OVER;
       setScene();
     }    
@@ -141,7 +121,6 @@ void resetPlayer() {
   mapX = 0;
   mapY = 0; 
   player = Player(1);
-  setPlayerHealthToFull();
 }
 
 void playGame(){  
@@ -158,50 +137,54 @@ void playGame(){
 void checkCollision(){
   if(arduboy.collide(playerCollider, enemyCollider)){
     mapX+=10;
-    currentPlayerHealth--;
     player.currentHealth--;
   }
 }
 
 void drawPlayer(){
   byte feetSize = 2;
-  int currentFeetY = (playerY + (PLAYER_SPRITE_HEIGHT - feetSize) - mapY) / TILE_SIZE;
-  int currentFeetX = (playerX + PLAYER_SPRITE_WIDTH / 2 - mapX) / TILE_SIZE;
+  int currentFeetY = (player.yPos + (player.spriteHeight() - feetSize) - mapY) / TILE_SIZE;
+  int currentFeetX = (player.xPos + player.spriteWidth() / 2 - mapX) / TILE_SIZE;
   int nextFeetY;
   int nextFeetX;
 
-  playerCollider = Rect(playerX, playerY, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT);  
+  playerCollider = Rect(player.xPos, player.yPos, player.spriteWidth(), player.spriteHeight());  
 
   if (arduboy.pressed(DOWN_BUTTON)) {
-    sprites.drawPlusMask(playerX, playerY, CHAR_FORWARD_WALKING, counter);
+    player.walkDown(counter);
+    //sprites.drawPlusMask(playerX, playerY, CHAR_FORWARD_WALKING, counter);
 
-    nextFeetY = (playerY + PLAYER_SPRITE_HEIGHT + 2 - mapY) / TILE_SIZE;
-    if ((playerY + PLAYER_SPRITE_HEIGHT) < (mapY + TILE_SIZE * WORLD_HEIGHT) && world[nextFeetY][currentFeetX] < WATER)
+    nextFeetY = (player.yPos + player.spriteHeight() + 2 - mapY) / TILE_SIZE;
+    if ((player.yPos + player.spriteHeight()) < (mapY + TILE_SIZE * WORLD_HEIGHT) && world[nextFeetY][currentFeetX] < WATER)
       mapY--;
   }
   else if (arduboy.pressed(UP_BUTTON)){
-    sprites.drawPlusMask(playerX, playerY, CHAR_BACK_WALKING, counter);
+    player.walkUp(counter);
+    //sprites.drawPlusMask(playerX, playerY, CHAR_BACK_WALKING, counter);
 
-    nextFeetY = (playerY + PLAYER_SPRITE_HEIGHT / 2 - mapY) / TILE_SIZE;
-    if (mapY < playerY + PLAYER_SPRITE_HEIGHT / 2 && world[nextFeetY][currentFeetX] < WATER)
+    nextFeetY = (player.yPos + player.spriteHeight() / 2 - mapY) / TILE_SIZE;
+    if (mapY < player.yPos + player.spriteHeight() / 2 && world[nextFeetY][currentFeetX] < WATER)
       mapY++;
   }
   else if (arduboy.pressed(LEFT_BUTTON))  {
-    sprites.drawPlusMask(playerX, playerY, CHAR_LEFT_WALKING, counter);
+    player.walkLeft(counter);
+    //sprites.drawPlusMask(playerX, playerY, CHAR_LEFT_WALKING, counter);
 
-    nextFeetX = (playerX - mapX) / TILE_SIZE;
-    if (mapX < playerX && world[currentFeetY][nextFeetX] < WATER)
+    nextFeetX = (player.xPos - mapX) / TILE_SIZE;
+    if (mapX < player.xPos && world[currentFeetY][nextFeetX] < WATER)
       mapX++;
   }
   else if (arduboy.pressed(RIGHT_BUTTON))  {
-    sprites.drawPlusMask(playerX, playerY, CHAR_RIGHT_WALKING, counter);
+    player.walkRight(counter);
+    //sprites.drawPlusMask(playerX, playerY, CHAR_RIGHT_WALKING, counter);
 
-    nextFeetX = (playerX + PLAYER_SPRITE_WIDTH - mapX) / TILE_SIZE;
-    if (playerX + PLAYER_SPRITE_WIDTH < mapX + TILE_SIZE * WORLD_WIDTH && world[currentFeetY][nextFeetX] < WATER)
+    nextFeetX = (player.xPos + player.spriteWidth() - mapX) / TILE_SIZE;
+    if (player.xPos + player.spriteWidth() < mapX + TILE_SIZE * WORLD_WIDTH && world[currentFeetY][nextFeetX] < WATER)
       mapX--;
   }
   else {
-    sprites.drawPlusMask(playerX, playerY, CHAR_FORWARD_IDLE, 0);
+    player.idle(0);
+    //sprites.drawPlusMask(playerX, playerY, CHAR_FORWARD_IDLE, 0);
   }  
 
   if(arduboy.pressed(B_BUTTON)){
@@ -219,12 +202,12 @@ void shoot(){
   // Projectile shot{1, 2, 3, 4, 5};
 
   // playerProjectiles.push(shot);
-  arduboy.fillRect(mapX - (playerX / 2), mapY - (playerY / 2), 2, 2, BLACK);
+  arduboy.fillRect(mapX - (player.xPos / 2), mapY - (player.yPos / 2), 2, 2, BLACK);
 }
 
 void drawPlayerHealth(){
-  arduboy.fillRect(3, 3, (maxPlayerHealth * 2) + 2, 7, BLACK);
-  arduboy.fillRect(4, 4, (currentPlayerHealth * 2), 5, WHITE);
+  arduboy.fillRect(3, 3, (player.maxHealth * 2) + 2, 7, BLACK);
+  arduboy.fillRect(4, 4, (player.currentHealth * 2), 5, WHITE);
 }
 
 void drawSpider(){
@@ -276,10 +259,6 @@ void drawGameOverScene(){
     arduboy.println("gitgudlul");
     arduboy.display();
     arduboy.setTextSize(1);
-}
-
-void setPlayerHealthToFull() {
-  currentPlayerHealth = maxPlayerHealth;
 }
 
 void menuSelectionStuff() {
