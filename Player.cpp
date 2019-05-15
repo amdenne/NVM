@@ -2,14 +2,14 @@
 using namespace std;
 
 Player::Player(byte _level) {
-    unsigned char _spriteHeight = 16;
-    unsigned char _spriteWidth = 10;
-    unsigned char _healthMultiplier = 10;
-    // static const unsigned char _idleSprite = CHAR_FORWARD_IDLE;
-    // static const unsigned char _downWalkSprite = CHAR_FORWARD_WALKING;
-    // static const unsigned char _leftWalkSprite = CHAR_LEFT_WALKING;
-    // static const unsigned char _rightWalkSprite = CHAR_RIGHT_WALKING;
-    // static const unsigned char _upWalkSprite = CHAR_BACK_WALKING;
+    _spriteHeight = 16;
+    _spriteWidth = 10;
+    _healthMultiplier = 10;
+    // _idleSprite = CHAR_FORWARD_IDLE;
+    // _downWalkSprite = CHAR_FORWARD_WALKING;
+    // _leftWalkSprite = CHAR_LEFT_WALKING;
+    // _rightWalkSprite = CHAR_RIGHT_WALKING;
+    // _upWalkSprite = CHAR_BACK_WALKING;
 
     level = _level;
     maxHealth = _level * _healthMultiplier;

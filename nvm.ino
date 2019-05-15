@@ -129,7 +129,7 @@ void playGame(){
   drawPlayer(); 
   moveProjectiles();
   checkCollision();
-  debug();
+  // debug();
 
   arduboy.display();  
 }
