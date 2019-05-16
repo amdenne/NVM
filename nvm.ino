@@ -12,6 +12,7 @@
 #define WATER 2
 #define MAX_PLAYER_PROJECTILES 10
 
+#include "Projectile.h"
 #include "Player.h"
   Player player(1);
 #include "bitmaps.h"
@@ -19,17 +20,7 @@
   Arduboy2 arduboy;
   Sprites sprites;
 
-class Projectile{
-  public :
-  // Projectile(int x, int y, byte width, byte height, byte speed) : x{x}, y{y}, width{width}, height{height}, speed{speed} {}
-  int  x;
-  int y;
-  byte width;
-  byte height;
-  byte speed;
-};
 
-Rect playerCollider;
 Rect enemyCollider;
 unsigned long counter = 0;
 byte lastScene = NO_SCENE;
@@ -111,7 +102,7 @@ void setScene() {
         lastScene = GAME_OVER;
         currentScene = GAME_TITLE;
 
-        resetPlayer();
+        player.reset();
       }
     }
   }
@@ -135,7 +126,7 @@ void playGame(){
 }
 
 void checkCollision(){
-  if(arduboy.collide(playerCollider, enemyCollider)){
+  if(arduboy.collide(player.playerCollider(), enemyCollider)){
     mapX+=10;
     player.currentHealth--;
   }
@@ -148,11 +139,8 @@ void drawPlayer(){
   int nextFeetY;
   int nextFeetX;
 
-  playerCollider = Rect(player.xPos, player.yPos, player.spriteWidth(), player.spriteHeight());  
-
   if (arduboy.pressed(DOWN_BUTTON)) {
     player.walkDown(counter);
-    //sprites.drawPlusMask(playerX, playerY, CHAR_FORWARD_WALKING, counter);
 
     nextFeetY = (player.yPos + player.spriteHeight() + 2 - mapY) / TILE_SIZE;
     if ((player.yPos + player.spriteHeight()) < (mapY + TILE_SIZE * WORLD_HEIGHT) && world[nextFeetY][currentFeetX] < WATER)
@@ -160,7 +148,6 @@ void drawPlayer(){
   }
   else if (arduboy.pressed(UP_BUTTON)){
     player.walkUp(counter);
-    //sprites.drawPlusMask(playerX, playerY, CHAR_BACK_WALKING, counter);
 
     nextFeetY = (player.yPos + player.spriteHeight() / 2 - mapY) / TILE_SIZE;
     if (mapY < player.yPos + player.spriteHeight() / 2 && world[nextFeetY][currentFeetX] < WATER)
@@ -168,7 +155,6 @@ void drawPlayer(){
   }
   else if (arduboy.pressed(LEFT_BUTTON))  {
     player.walkLeft(counter);
-    //sprites.drawPlusMask(playerX, playerY, CHAR_LEFT_WALKING, counter);
 
     nextFeetX = (player.xPos - mapX) / TILE_SIZE;
     if (mapX < player.xPos && world[currentFeetY][nextFeetX] < WATER)
@@ -176,7 +162,6 @@ void drawPlayer(){
   }
   else if (arduboy.pressed(RIGHT_BUTTON))  {
     player.walkRight(counter);
-    //sprites.drawPlusMask(playerX, playerY, CHAR_RIGHT_WALKING, counter);
 
     nextFeetX = (player.xPos + player.spriteWidth() - mapX) / TILE_SIZE;
     if (player.xPos + player.spriteWidth() < mapX + TILE_SIZE * WORLD_WIDTH && world[currentFeetY][nextFeetX] < WATER)
@@ -184,7 +169,6 @@ void drawPlayer(){
   }
   else {
     player.idle(0);
-    //sprites.drawPlusMask(playerX, playerY, CHAR_FORWARD_IDLE, 0);
   }  
 
   if(arduboy.pressed(B_BUTTON)){
