@@ -14,14 +14,14 @@
 
 #include "Projectile.h"
 #include "Player.h"
-  Player player(1);
+  Player player;
+#include "EnemyEntity.h"
+  EnemyEntity enemy(1);
 #include "bitmaps.h"
 #include <Arduboy2.h>
   Arduboy2 arduboy;
   Sprites sprites;
 
-
-Rect enemyCollider;
 unsigned long counter = 0;
 byte lastScene = NO_SCENE;
 byte selectedOption = 1;
@@ -44,20 +44,23 @@ void setup() {
   arduboy.setFrameRate(FRAME_RATE);
   playNevermindSplash();
   currentScene = GAME_TITLE;
+  player = Player(1);
+  enemy = EnemyEntity(1);
   // Projectile playerProjectiles[MAX_PLAYER_PROJECTILES];
 }
 
 void debug(){
   arduboy.fillRect(0, 0, 60, 8, BLACK);
   arduboy.setCursor(0,0);
-  arduboy.print(player.spriteHeight());  
+  arduboy.print(enemy.currentHealth);  
   arduboy.print(",");
-  arduboy.print(player.spriteWidth());
+  arduboy.print(enemy.spriteWidth());
 }
 
 void loop() {
   if (!(arduboy.nextFrame()))
     return;
+  arduboy.pollButtons();
 
   setScene();
 
@@ -88,10 +91,10 @@ void setScene() {
       setScene();
     }    
       playGame();      
-    if(arduboy.pressed(A_BUTTON)) {
-      lastScene = GAME_PLAY;
-      currentScene = GAME_TITLE;
-    }    
+    // if(arduboy.pressed(A_BUTTON)) {
+    //   lastScene = GAME_PLAY;
+    //   currentScene = GAME_TITLE;
+    // }    
   }
   else if (currentScene == GAME_OVER) {
     while (currentScene == GAME_OVER) {
@@ -116,20 +119,27 @@ void resetPlayer() {
 
 void playGame(){  
   drawWorld();
-  drawSpider();
+  if(enemy.currentHealth > 0)
+    drawSpider();
   drawPlayer(); 
   moveProjectiles();
   checkCollision();
-  // debug();
+  //debug();
 
   arduboy.display();  
 }
 
 void checkCollision(){
-  if(arduboy.collide(player.playerCollider(), enemyCollider)){
+  if(arduboy.collide(player.playerCollider(), enemy.enemyCollider())){
     mapX+=10;
     player.currentHealth--;
   }
+  if(arduboy.collide(player.weaponCollider(), enemy.enemyCollider())){
+    if(enemy.currentHealth > 0)
+        enemy.currentHealth--;
+  }
+  
+  player.removeWeaponCollider();
 }
 
 void drawPlayer(){
@@ -171,8 +181,8 @@ void drawPlayer(){
     player.idle(0);
   }  
 
-  if(arduboy.pressed(B_BUTTON)){
-    shoot();
+  if(arduboy.justPressed(B_BUTTON)){
+    player.attack();
   }
   
   drawPlayerHealth();
@@ -197,8 +207,7 @@ void drawPlayerHealth(){
 void drawSpider(){
   int spiderX = 5 * TILE_SIZE + mapX;
   int spiderY = 0 + mapY;
-  sprites.drawPlusMask(spiderX, spiderY, SPIDER, counter);
-  enemyCollider = Rect(spiderX, spiderY, 17, 16);
+  enemy.draw(spiderX, spiderY, counter);
 }
 
 void drawWorld() {
@@ -246,8 +255,6 @@ void drawGameOverScene(){
 }
 
 void menuSelectionStuff() {
-  arduboy.pollButtons();
-
   if (arduboy.justPressed(DOWN_BUTTON)) {
     selectedOption++;
     if (selectedOption > 3)
