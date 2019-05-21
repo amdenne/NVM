@@ -193,9 +193,6 @@ void moveProjectiles(){
 }
 
 void shoot(){
-  // Projectile shot{1, 2, 3, 4, 5};
-
-  // playerProjectiles.push(shot);
   arduboy.fillRect(mapX - (player.xPos / 2), mapY - (player.yPos / 2), 2, 2, BLACK);
 }
 
